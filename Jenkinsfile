@@ -2,47 +2,40 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = 'python:3.9'
-        SONARQUBE_URL = 'http://172.25.208.249:8001/'
+        REPO_NAME = sh(script: 'basename $PWD', returnStdout: true).trim()
+        DOCKER_IMAGE_NAME = "${REPO_NAME}:${BUILD_NUMBER}"
+        DOCKER_HUB_CREDENTIALS = 'docker-hub-credentials-id'
     }
 
     stages {
-        stage('Clonar Repositorio') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Construir Imagen Docker') {
+        stage('Build and Push Docker Image') {
             steps {
                 script {
-                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} ."
+                    sh "docker build -t ${DOCKER_IMAGE_NAME} ."
+                    withCredentials([usernamePassword(credentialsId: DOCKER_HUB_CREDENTIALS, usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
+                        sh "docker login -u ${DOCKER_HUB_USERNAME} -p ${DOCKER_HUB_PASSWORD}"
+                    }
+                    sh "docker tag ${DOCKER_IMAGE_NAME} jdmonsalvel/${DOCKER_IMAGE_NAME}"
+                    sh "docker push jdmonsalvel/${DOCKER_IMAGE_NAME}"
                 }
             }
         }
 
-        stage('Pruebas Unitarias') {
+        stage('Run SonarQube') {
             steps {
                 script {
-                    sh 'docker run ${DOCKER_IMAGE}:${BUILD_NUMBER} pytest'
-                }
-            }
-        }
-
-        stage('SonarQube Analysis') {
-            steps {
-                script {
-                    withSonarQubeEnv('SonarQube') {
-                        sh "docker run -e SONAR_HOST_URL=${SONARQUBE_URL} ${DOCKER_IMAGE}:${BUILD_NUMBER} sonar-scanner"
+                    withEnv(["PATH+MAVEN=${tool 'Maven'}/bin"]) {
+                        sh "mvn sonar:sonar -Dsonar.host.url=http://172.25.208.249:8001/ -Dsonar.login=<SONAR_TOKEN>"
                     }
                 }
             }
         }
 
-        stage('Limpiar') {
+        stage('Install and Run Pytest') {
             steps {
                 script {
-                    sh "docker rmi ${DOCKER_IMAGE}:${BUILD_NUMBER}"
+                    sh 'pip install pytest'
+                    sh 'pytest'
                 }
             }
         }
