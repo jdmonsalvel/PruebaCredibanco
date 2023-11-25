@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_IMAGE = 'python:3.9'
+        SONARQUBE_URL = 'http://172.25.208.249:8001/'
+    }
+
     stages {
         stage('Clonar Repositorio') {
             steps {
@@ -8,11 +13,18 @@ pipeline {
             }
         }
 
+        stage('Construir Imagen Docker') {
+            steps {
+                script {
+                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} ."
+                }
+            }
+        }
+
         stage('Pruebas Unitarias') {
             steps {
                 script {
-                    sh 'pip install -r requirements.txt'
-                    sh 'pytest'
+                    sh 'docker run ${DOCKER_IMAGE}:${BUILD_NUMBER} pytest'
                 }
             }
         }
@@ -21,19 +33,16 @@ pipeline {
             steps {
                 script {
                     withSonarQubeEnv('SonarQube') {
-                        sh 'sonar-scanner'
+                        sh "docker run -e SONAR_HOST_URL=${SONARQUBE_URL} ${DOCKER_IMAGE}:${BUILD_NUMBER} sonar-scanner"
                     }
                 }
             }
         }
 
-        stage('Construir y Subir a Docker Hub') {
+        stage('Limpiar') {
             steps {
                 script {
-                    sh 'docker build -t mi-aplicacion-web:${BUILD_NUMBER} .'
-                    sh 'docker tag mi-aplicacion-web:${BUILD_NUMBER} tu_usuario_docker_hub/mi-aplicacion-web:${BUILD_NUMBER}'
-                    sh 'docker login -u tu_usuario_docker_hub -p tu_contraseña_docker_hub'
-                    sh 'docker push tu_usuario_docker_hub/mi-aplicacion-web:${BUILD_NUMBER}'
+                    sh "docker rmi ${DOCKER_IMAGE}:${BUILD_NUMBER}"
                 }
             }
         }
