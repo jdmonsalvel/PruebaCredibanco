@@ -11,6 +11,9 @@ pipeline {
         stage('Pruebas Unitarias') {
             steps {
                 script {
+                    sh 'echo "PATH: $PATH"'
+                    sh 'echo "Python Version: $(python --version)"'
+                    sh 'echo "pip Version: $(pip --version)"'
                     sh 'pip install -r requirements.txt'
                     sh 'pytest'
                 }
