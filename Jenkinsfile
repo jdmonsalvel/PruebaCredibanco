@@ -1,5 +1,11 @@
 pipeline {
-    agent any
+    agent {
+        dockerfile {
+            filename 'Dockerfile'
+            label 'docker-pip-agent'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
+    }
 
     environment {
         REPO_NAME = sh(script: 'basename $PWD', returnStdout: true).trim()
