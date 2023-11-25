@@ -11,10 +11,6 @@ pipeline {
         stage('Pruebas Unitarias') {
             steps {
                 script {
-                    sh 'apt-get update'
-                    sh 'apt-get install -y python3'
-                    sh 'curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py'
-                    sh 'python3 get-pip.py'
                     sh 'pip install -r requirements.txt'
                     sh 'pytest'
                 }
@@ -36,7 +32,7 @@ pipeline {
                 script {
                     sh 'docker build -t mi-aplicacion-web:${BUILD_NUMBER} .'
                     sh 'docker tag mi-aplicacion-web:${BUILD_NUMBER} tu_usuario_docker_hub/mi-aplicacion-web:${BUILD_NUMBER}'
-                    sh 'docker login -u jdmonsalvel -p T3mp0ral01.'
+                    sh 'docker login -u tu_usuario_docker_hub -p tu_contraseña_docker_hub'
                     sh 'docker push tu_usuario_docker_hub/mi-aplicacion-web:${BUILD_NUMBER}'
                 }
             }
