@@ -1,6 +1,11 @@
 # Utiliza una imagen de Python como base
 FROM python:3.9
 
+RUN apt-get update && \
+    apt-get install -y python3-pip && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+    
 # Establece el directorio de trabajo en /app
 WORKDIR /app
 
